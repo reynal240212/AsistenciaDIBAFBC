@@ -561,23 +561,33 @@ const App = () => {
                     { key: 'audioEnabled', label: 'Audio Feedback', icon: ClipboardList },
                     { key: 'mirrorCamera', label: 'Modo Espejo', icon: Camera },
                     { key: 'autoAttendance', label: 'Auto-Asistencia', icon: UserCheck },
+                    { 
+                      key: 'facingMode', 
+                      label: settings.facingMode === 'user' ? 'Cámara Frontal' : 'Cámara Trasera', 
+                      icon: RefreshCw,
+                      onClick: () => setSettings({...settings, facingMode: settings.facingMode === 'user' ? 'environment' : 'user'})
+                    },
                   ].map((item) => (
                     <button
                       key={item.key}
-                      onClick={() => setSettings({...settings, [item.key]: !settings[item.key]})}
+                      onClick={item.onClick || (() => setSettings({...settings, [item.key]: !settings[item.key]}))}
                       className={`p-4 rounded-3xl border transition-all flex items-center justify-between group ${
-                        settings[item.key] ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.05]'
+                        (item.key === 'facingMode' ? true : settings[item.key]) ? 'bg-yellow-500/10 border-yellow-500/30' : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.05]'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <item.icon className={`w-5 h-5 ${settings[item.key] ? 'text-yellow-500' : 'text-slate-500'}`} />
-                        <span className={`text-xs font-black uppercase tracking-widest ${settings[item.key] ? 'text-white' : 'text-slate-400'}`}>
+                        <item.icon className={`w-5 h-5 ${(item.key === 'facingMode' ? true : settings[item.key]) ? 'text-yellow-500' : 'text-slate-500'} ${item.key === 'facingMode' ? 'group-hover:rotate-180 transition-transform duration-500' : ''}`} />
+                        <span className={`text-xs font-black uppercase tracking-widest ${(item.key === 'facingMode' ? true : settings[item.key]) ? 'text-white' : 'text-slate-400'}`}>
                           {item.label}
                         </span>
                       </div>
-                      <div className={`w-10 h-5 rounded-full relative transition-colors ${settings[item.key] ? 'bg-yellow-500' : 'bg-slate-800'}`}>
-                        <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${settings[item.key] ? 'left-6' : 'left-1'}`} />
-                      </div>
+                      {item.key !== 'facingMode' ? (
+                        <div className={`w-10 h-5 rounded-full relative transition-colors ${settings[item.key] ? 'bg-yellow-500' : 'bg-slate-800'}`}>
+                          <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${settings[item.key] ? 'left-6' : 'left-1'}`} />
+                        </div>
+                      ) : (
+                        <RefreshCw className="w-4 h-4 text-yellow-500 opacity-50 transition-transform group-active:rotate-180" />
+                      )}
                     </button>
                   ))}
                 </div>
