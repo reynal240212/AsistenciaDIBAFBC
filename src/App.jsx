@@ -31,6 +31,8 @@ const App = () => {
       quality: 'high'
     };
   });
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem('diba-face-settings', JSON.stringify(settings));
@@ -113,6 +115,28 @@ const App = () => {
     setStatus('Error de hardware');
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !selectedPlayer) return;
+
+    setIsProcessingImage(true);
+    try {
+      const img = await faceapi.bufferToImage(file);
+      const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor();
+
+      if (detection) {
+        handleRegisterFace(selectedPlayer, detection.descriptor);
+      } else {
+        alert('No se detectó ningún rostro en la imagen. Intenta con otra foto más clara.');
+      }
+    } catch (err) {
+      console.error('Error processing image:', err);
+      alert('Error al procesar la imagen.');
+    } finally {
+      setIsProcessingImage(false);
+    }
+  };
+
   const filteredPlayers = players.filter(p => 
     (p.nombre || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
     p.numero.includes(searchTerm)
@@ -173,6 +197,12 @@ const App = () => {
         <div className="lg:col-span-8 flex flex-col gap-8">
           {/* Main Viewport */}
           <div className="relative aspect-video bg-black rounded-[40px] border border-white/10 overflow-hidden shadow-2xl group ring-1 ring-white/5">
+            {isProcessingImage ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-slate-950 z-20">
+                <Loader2 className="w-12 h-12 animate-spin text-yellow-500" />
+                <p className="font-black uppercase tracking-widest text-sm">Analizando Imagen...</p>
+              </div>
+            ) : null}
             {cameraError ? (
               <div className="flex flex-col items-center justify-center h-full gap-6 text-center p-12 bg-slate-900/50">
                 <div className="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center border border-red-500/20">
@@ -223,18 +253,39 @@ const App = () => {
                   {captureMode === 'registration' ? 'Gestión de Jugadores' : 'Búsqueda Manual'}
                 </h3>
                 <p className="text-sm text-slate-400 mt-1">
-                  {captureMode === 'registration' ? 'Selecciona un jugador para vincular su identidad facial' : 'Busca un jugador para marcar asistencia manual'}
+                  {captureMode === 'registration' ? (
+                    selectedPlayer ? `Registrando a ${selectedPlayer.nombre}` : 'Selecciona un jugador'
+                  ) : 'Busca un jugador para marcar asistencia manual'}
                 </p>
               </div>
-              <div className="relative max-w-sm w-full">
-                <input 
-                  type="text" 
-                  placeholder="Nombre o ID..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 bg-black/40 border border-white/10 rounded-2xl text-sm focus:ring-2 focus:ring-yellow-500/50 transition-all placeholder:text-slate-600 outline-none"
-                />
-                <Scan className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                {captureMode === 'registration' && selectedPlayer && (
+                  <>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                    />
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex-1 md:flex-none px-6 py-3.5 bg-white/5 border border-white/10 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                    >
+                      <UserPlus className="w-4 h-4 text-yellow-500" /> Subir Foto
+                    </button>
+                  </>
+                )}
+                <div className="relative flex-1 md:w-64">
+                  <input 
+                    type="text" 
+                    placeholder="Nombre o ID..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3.5 bg-black/40 border border-white/10 rounded-2xl text-sm focus:ring-2 focus:ring-yellow-500/50 transition-all placeholder:text-slate-600 outline-none"
+                  />
+                  <Scan className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                </div>
               </div>
             </div>
 

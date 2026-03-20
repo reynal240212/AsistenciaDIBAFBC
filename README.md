@@ -10,6 +10,7 @@ Sistema profesional de control de asistencia para el club **DIBA FBC**, utilizan
 -   **Reconocimiento Facial IA**: Identificación instantánea con `face-api.js`.
 -   **Identidad del Club**: Interfaz personalizada con los colores oficiales Navy (Azul) y Gold (Oro).
 -   **Gestión por Categorías**: Organización automática de jugadores por año de nacimiento.
+-   **Carga de Imágenes Manual**: Alternativa a la cámara en vivo para registrar jugadores desde fotos locales.
 -   **Panel de Configuración Elite**: Ajuste de sensibilidad IA, feedback auditivo y modo espejo.
 -   **Registro en Vivo**: Feed en tiempo real de las asistencias marcadas.
 -   **Base de Datos en Tiempo Real**: Sincronización completa con Supabase.
