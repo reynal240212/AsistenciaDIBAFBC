@@ -6,39 +6,52 @@ import { UserCheck, Scan, RefreshCw } from 'lucide-react';
 const FaceCanvas = ({ mode, players, onMatch, onRegister, activePlayer, selectedPlayer, onCameraError, settings }) => {
   const videoRef = useRef();
   const canvasRef = useRef();
+  const streamRef = useRef(null);
+  
+  const [isReady, setIsReady] = useState(false);
   const [recognizing, setRecognizing] = useState(false);
   const [detectedName, setDetectedName] = useState(null);
   const [currentDescriptor, setCurrentDescriptor] = useState(null);
   const [labeledDescriptors, setLabeledDescriptors] = useState([]);
 
+  // Camera Management
   useEffect(() => {
-    startVideo();
-    loadLabeledImages();
-  }, [players]);
+    const startVideo = async () => {
+      try {
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+        }
 
-  const startVideo = () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      console.error('Browser does not support camera access');
-      return;
-    }
-
-    navigator.mediaDevices.getUserMedia({ 
-      video: true 
-    })
-      .then(stream => {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: settings.facingMode || 'user',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          } 
+        });
+        
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
-      })
-      .catch(err => {
-        console.error('Camera Error:', err);
-        if (onCameraError) {
-          onCameraError(err);
-        }
-      });
-  };
+        streamRef.current = stream;
+        setIsReady(true);
+      } catch (err) {
+        console.error("Camera Error:", err);
+        if (onCameraError) onCameraError(err);
+      }
+    };
 
-  const loadLabeledImages = () => {
+    startVideo();
+
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [settings.facingMode]);
+
+  // Load Face Descriptors
+  useEffect(() => {
     const descriptors = players
       .filter(p => p.face_token)
       .map(p => {
@@ -54,7 +67,7 @@ const FaceCanvas = ({ mode, players, onMatch, onRegister, activePlayer, selected
       .filter(d => d !== null);
     
     setLabeledDescriptors(descriptors);
-  };
+  }, [players]);
 
   const handleVideoPlay = async () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -62,7 +75,9 @@ const FaceCanvas = ({ mode, players, onMatch, onRegister, activePlayer, selected
     const displaySize = { width: videoRef.current.width, height: videoRef.current.height };
     faceapi.matchDimensions(canvasRef.current, displaySize);
 
-    setInterval(async () => {
+    const intervalId = setInterval(async () => {
+      if (!isReady || !videoRef.current) return;
+
       const detections = await faceapi.detectAllFaces(
         videoRef.current, 
         new faceapi.TinyFaceDetectorOptions()
@@ -76,9 +91,13 @@ const FaceCanvas = ({ mode, players, onMatch, onRegister, activePlayer, selected
         const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, settings.sensitivity);
         const results = resizedDetections.map(d => faceMatcher.findBestMatch(d.descriptor));
 
+        if (results.length === 0) {
+          setDetectedName(null);
+          setCurrentDescriptor(null);
+        }
+
         results.forEach((result, i) => {
           const box = resizedDetections[i].detection.box;
-          const label = result.toString();
           
           // Draw a custom premium box
           ctx.strokeStyle = '#facc15';
@@ -104,6 +123,8 @@ const FaceCanvas = ({ mode, players, onMatch, onRegister, activePlayer, selected
         });
       } else {
         // Just draw detection boxes
+        if (resizedDetections.length === 0) setDetectedName(null);
+        
         resizedDetections.forEach(detection => {
           if (mode === 'registration' && selectedPlayer) {
             setCurrentDescriptor(detection.descriptor);
@@ -118,6 +139,8 @@ const FaceCanvas = ({ mode, players, onMatch, onRegister, activePlayer, selected
         });
       }
     }, 1000);
+
+    return () => clearInterval(intervalId);
   };
 
   return (
@@ -169,7 +192,7 @@ const FaceCanvas = ({ mode, players, onMatch, onRegister, activePlayer, selected
       </AnimatePresence>
 
       {/* Scanning status */}
-      {!activePlayer && (
+      {!activePlayer && isReady && (
         <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10">
           <div className="flex items-center gap-4 bg-black/60 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 shadow-lg">
             <div className="relative flex items-center justify-center">
@@ -184,7 +207,7 @@ const FaceCanvas = ({ mode, players, onMatch, onRegister, activePlayer, selected
       )}
 
       {/* Laser Scan Line */}
-      {!activePlayer && (
+      {!activePlayer && isReady && (
         <motion.div 
           animate={{ top: ["10%", "90%", "10%"] }}
           transition={{ duration: 4, repeat: Infinity, ease: "linear" }}

@@ -28,6 +28,7 @@ const App = () => {
       sensitivity: 0.55,
       mirrorCamera: true,
       autoAttendance: true,
+      facingMode: 'user', // 'user' or 'environment'
       quality: 'high'
     };
   });
@@ -278,7 +279,10 @@ const App = () => {
                 activePlayer={activePlayer}
                 selectedPlayer={selectedPlayer}
                 onCameraError={handleCameraError}
-                settings={settings}
+                settings={{
+                  ...settings,
+                  mirrorCamera: settings.facingMode === 'user' ? settings.mirrorCamera : false
+                }}
               />
             )}
           </div>
