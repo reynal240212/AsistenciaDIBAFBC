@@ -22,15 +22,16 @@ const App = () => {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState(() => {
-    const saved = localStorage.getItem('diba-face-settings');
-    return saved ? JSON.parse(saved) : {
+    const defaultSettings = {
       audioEnabled: true,
       sensitivity: 0.55,
       mirrorCamera: true,
       autoAttendance: true,
-      facingMode: 'user', // 'user' or 'environment'
+      facingMode: 'user', 
       quality: 'high'
     };
+    const saved = localStorage.getItem('diba-face-settings');
+    return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
   });
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
