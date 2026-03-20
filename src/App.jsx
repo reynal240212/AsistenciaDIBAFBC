@@ -32,6 +32,7 @@ const App = () => {
     };
   });
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -134,6 +135,30 @@ const App = () => {
       alert('Error al procesar la imagen.');
     } finally {
       setIsProcessingImage(false);
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    if (captureMode === 'registration' && selectedPlayer) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    if (captureMode === 'registration' && selectedPlayer) {
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleImageUpload({ target: { files: [files[0]] } });
+      }
     }
   };
 
@@ -196,7 +221,21 @@ const App = () => {
         {/* Left Column: Camera Feed & Player List */}
         <div className="lg:col-span-8 flex flex-col gap-8">
           {/* Main Viewport */}
-          <div className="relative aspect-video bg-black rounded-[40px] border border-white/10 overflow-hidden shadow-2xl group ring-1 ring-white/5">
+          <div 
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className="relative aspect-video bg-black rounded-[40px] border border-white/10 overflow-hidden shadow-2xl group ring-1 ring-white/5 transition-all"
+          >
+            {isDragging ? (
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-yellow-500/20 backdrop-blur-md border-4 border-dashed border-yellow-500 rounded-[40px] animate-pulse">
+                <div className="w-24 h-24 bg-yellow-500 rounded-full flex items-center justify-center shadow-2xl mb-6">
+                  <UserPlus className="w-12 h-12 text-black" />
+                </div>
+                <h3 className="text-2xl font-black uppercase tracking-widest text-white shadow-sm">Suelta para Registrar</h3>
+                <p className="text-white/80 font-bold mt-2">Vincular foto a {selectedPlayer?.nombre}</p>
+              </div>
+            ) : null}
             {isProcessingImage ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-slate-950 z-20">
                 <Loader2 className="w-12 h-12 animate-spin text-yellow-500" />
