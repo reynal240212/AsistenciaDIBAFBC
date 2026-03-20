@@ -35,6 +35,7 @@ const App = () => {
   });
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -114,6 +115,7 @@ const App = () => {
 
   const handleCameraError = (err) => {
     console.error('Camera Error Callback:', err);
+    setIsStreaming(false);
     setCameraError(err.name === 'NotFoundError' ? 'No se detectó ninguna cámara. Por favor conecta una o revisa los permisos.' : `Error de cámara: ${err.message}`);
     setStatus('Error de hardware');
   };
@@ -260,31 +262,55 @@ const App = () => {
                   <RefreshCw className="w-5 h-5" /> Reintentar conexión
                 </button>
               </div>
-            ) : !modelsLoaded ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-slate-950">
-                <div className="relative">
-                  <Loader2 className="w-16 h-16 animate-spin text-yellow-500" />
-                  <div className="absolute inset-0 bg-yellow-500/20 blur-2xl animate-pulse" />
-                </div>
-                <div className="text-center">
-                  <p className="text-xl font-bold tracking-tight mb-1">{status}</p>
-                  <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold">Iniciando Redes Neuronales</p>
+            ) : !isStreaming ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-slate-900 overflow-hidden">
+                <img 
+                  src="/placeholder.png" 
+                  alt="Diba FBC Placeholder" 
+                  className="absolute inset-0 w-full h-full object-cover opacity-40 blur-[2px] scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+                
+                <div className="relative z-10 flex flex-col items-center text-center gap-8">
+                  <div className="w-24 h-24 bg-white/5 backdrop-blur-xl rounded-[32px] border border-white/10 flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                    <Camera className="w-12 h-12 text-yellow-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-3xl font-black uppercase italic tracking-tighter mb-2">DIBA <span className="text-yellow-500">FBC</span> AI</h3>
+                    <p className="text-sm text-slate-400 font-bold uppercase tracking-widest max-w-xs">Hardware listo. Pulsa abajo para iniciar el escaneo facial.</p>
+                  </div>
+                  <button 
+                    onClick={() => setIsStreaming(true)}
+                    className="px-10 py-5 bg-yellow-500 text-black font-black uppercase tracking-[0.2em] rounded-3xl hover:bg-yellow-400 hover:scale-105 transition-all shadow-[0_20px_40px_rgba(234,179,8,0.3)] flex items-center gap-4 group"
+                  >
+                    <RefreshCw className="w-6 h-6 group-hover:rotate-180 transition-transform duration-700" />
+                    Iniciar Cámara
+                  </button>
                 </div>
               </div>
             ) : (
-              <FaceCanvas 
-                mode={captureMode}
-                players={players}
-                onMatch={handleAttendance}
-                onRegister={handleRegisterFace}
-                activePlayer={activePlayer}
-                selectedPlayer={selectedPlayer}
-                onCameraError={handleCameraError}
-                settings={{
-                  ...settings,
-                  mirrorCamera: settings.facingMode === 'user' ? settings.mirrorCamera : false
-                }}
-              />
+              <div className="relative w-full h-full">
+                <FaceCanvas 
+                  mode={captureMode}
+                  players={players}
+                  onMatch={handleAttendance}
+                  onRegister={handleRegisterFace}
+                  activePlayer={activePlayer}
+                  selectedPlayer={selectedPlayer}
+                  onCameraError={handleCameraError}
+                  settings={{
+                    ...settings,
+                    mirrorCamera: settings.facingMode === 'user' ? settings.mirrorCamera : false
+                  }}
+                />
+                <button 
+                  onClick={() => setIsStreaming(false)}
+                  className="absolute top-6 right-6 z-30 p-3 bg-red-500/20 backdrop-blur-md border border-red-500/30 rounded-2xl hover:bg-red-500 text-white transition-all group"
+                  title="Cerrar Cámara"
+                >
+                  <CameraOff className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                </button>
+              </div>
             )}
           </div>
 
